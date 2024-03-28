@@ -8,6 +8,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics.pairwise import cosine_similarity
 
+import numpy as np
+
 class RotationInvariantLBP:
     def __init__(self, num_points, radius):
         self.num_points = num_points
@@ -35,16 +37,14 @@ class RotationInvariantLBP:
                 # 회전 불변 LBP 패턴 계산
                 min_pattern = binary_pattern
                 for i in range(1, self.num_points):
-                    rotated_pattern = (binary_pattern >> i) | (binary_pattern << (self.num_points - i))
+                    rotated_pattern = ((binary_pattern >> i) | (binary_pattern << (self.num_points - i))) & ((1 << self.num_points) - 1)
                     if rotated_pattern < min_pattern:
                         min_pattern = rotated_pattern
-                
-                 # 2^p를 할당
-                    lbpp_r_value = min_pattern * (2 ** i)
-
-                lbp_image[y, x] = lbpp_r_value
+                        
+                lbp_image[y, x] = min_pattern
 
         return lbp_image
+
 
 def extract_features(image_paths, labels):
     rlbp = RotationInvariantLBP(num_points=8, radius=1)
