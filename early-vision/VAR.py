@@ -23,8 +23,10 @@ class VAR:
         return var_image
 
 # Example usage
+"""
 var_obj = VAR(P=8)
 image = np.random.rand(256, 256) * 255  # Example grayscale image
 image = image.astype('uint8')
 R = 1  # Example radius
 var_image = var_obj.compute_var(image, R)
+"""

@@ -38,7 +38,7 @@ class LBP_riu2:
                 center = image[i, j]
                 pixels = self._get_pixel_neighbors(image, j, i)
                 values = self._thresholded(center, pixels)
-                if self._uniformity(values) <= 2:
+                if self._uniformity(values, center) <= 2:
                     lbp_image[i, j] = np.sum(values * (1 << np.arange(self.P)))
                 else:
                     lbp_image[i, j] = self.P + 1
@@ -52,9 +52,11 @@ class LBP_riu2:
         return hist
 
 # Example usage
+"""
 lbp_rui2 = LBP_riu2(P=8, R=1)
 image = np.random.rand(256, 256) * 255  # Example grayscale image
 image = image.astype('uint8')
 
 lbp_image = lbp_rui2.compute_lbp(image)
 histogram = lbp_rui2.compute_histogram(lbp_image)
+"""
