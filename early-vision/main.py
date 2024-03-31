@@ -1,47 +1,72 @@
-# Normalize the histogram
+import tkinter as tk
+from tkinter import filedialog
+from PIL import Image, ImageTk
 import numpy as np
-import matplotlib.pyplot as plt
-
-# Assume the LBP_riu2 and VAR classes are defined correctly in their respective modules
 from LBP_riu2 import LBP_riu2
 from VAR import VAR
+from feature_extraction import extract_combined_features, find_most_similar_cosine
 
-# Instantiate both classes
-lbp_riu2 = LBP_riu2(P=8, R=1)
-var = VAR(P=8)
 
-# Load your image or create a synthetic one for testing
-# image = skimage.io.imread('path_to_your_image.png') # Uncomment this line if you have an image to load
-image = np.random.rand(256, 256) * 255  # Synthetic image for example purposes
-image = image.astype('uint8')
+# Function to open an image and extract features
+def open_image():
+    global query_features, img_path
+    
+    img_path = filedialog.askopenfilename()
+    if img_path:
+        query_features = extract_combined_features(img_path, lbp_extractor, var_extractor)
+        load_query_image(img_path)
 
-# Compute LBP_riu2 and VAR features
-lbp_image = lbp_riu2.compute_lbp(image)
-var_image = var.compute_var(image, R=1)
+# Function to load and display the query image
+def load_query_image(path):
+    img = Image.open(path)
+    img.thumbnail((200, 200))  # Resize for thumbnail
+    img = ImageTk.PhotoImage(img)
+    query_panel.config(image=img)
+    query_panel.image = img  # Keep a reference so it's not garbage collected
 
-# Compute the joint feature vector or joint histogram here as needed for your application
-# The exact implementation would depend on how you plan to use these features
+# Function to find and display similar images
+def find_similar():
+    if query_features is not None:
+        top_k_indices = find_most_similar_cosine(query_features, dataset_features, top_k=5)
+        display_similar_images(top_k_indices)
 
-# Example of creating a joint histogram (2D histogram)
-num_bins = 20  # Number of bins for histogram
-joint_histogram, xedges, yedges = np.histogram2d(lbp_image.ravel(), var_image.ravel(), bins=num_bins)
+# Function to display similar images
+def display_similar_images(indices):
+    for index, panel in zip(indices, result_panels):
+        img_path = image_paths[index]
+        img = Image.open(img_path)
+        img.thumbnail((100, 100))
+        img = ImageTk.PhotoImage(img)
+        panel.config(image=img)
+        panel.image = img
 
-# Normalize the histogram
-joint_histogram_normalized = joint_histogram / np.sum(joint_histogram)
+# Initialize the feature extractors
+lbp_extractor = LBP_riu2(P=8, R=1)
+var_extractor = VAR(P=8)
 
-# Plot the joint histogram
-plt.imshow(joint_histogram_normalized, interpolation='nearest', cmap='hot', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
-plt.title('Joint Histogram of LBP_riu2 and VAR')
-plt.xlabel('VAR Values')
-plt.ylabel('LBP_riu2 Values')
-plt.colorbar()
-plt.show()
-joint_histogram_normalized = joint_histogram / np.sum(joint_histogram)
+# Dummy dataset features and paths (replace with your actual data)
+dataset_features = np.load('dataset_features.npy')
+image_paths = ['image1.jpg', 'image2.jpg', ...]  # replace with actual paths
 
-# Use a logarithmic color scale to enhance visibility of low-frequency bins
-plt.imshow(np.log1p(joint_histogram_normalized), interpolation='nearest', cmap='hot')
-plt.title('Log-Scaled Joint Histogram of LBP_RIU2 and VAR')
-plt.xlabel('VAR Values')
-plt.ylabel('LBP_RIU2 Values')
-plt.colorbar()
-plt.show()
+# Create main window
+root = tk.Tk()
+root.title("Image Similarity GUI")
+
+# Load query image button
+load_button = tk.Button(root, text="Load Query Image", command=open_image)
+load_button.pack()
+
+# Panel to display the query image
+query_panel = tk.Label(root)
+query_panel.pack()
+
+# Find similar images button
+find_button = tk.Button(root, text="Find Similar Images", command=find_similar)
+find_button.pack()
+
+# Panels to display the result images
+result_panels = [tk.Label(root) for _ in range(5)]
+for panel in result_panels:
+    panel.pack(side=tk.LEFT)
+
+root.mainloop()
