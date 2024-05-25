@@ -32,16 +32,21 @@ class LBP_riu2:
         return image[y, x]
 
     def compute_lbp(self, image):
-        lbp_image = np.zeros_like(image, dtype=np.uint8)
-        for i in range(self.R, image.shape[0] - self.R):
-            for j in range(self.R, image.shape[1] - self.R):
+        rows, cols = image.shape
+        lbp_image = np.zeros((rows - 2 * self.R, cols - 2 * self.R), dtype=np.uint8)
+
+        for i in range(self.R, rows - self.R):
+            for j in range(self.R, cols - self.R):
                 center = image[i, j]
                 pixels = self._get_pixel_neighbors(image, j, i)
-                values = self._thresholded(center, pixels)
-                if self._uniformity(values, center) <= 2:
-                    lbp_image[i, j] = np.sum(values * (1 << np.arange(self.P)))
+                binary_pattern = self._thresholded(center, pixels)
+                uniformity = self._uniformity(binary_pattern)
+                if uniformity <= 2:
+                    rotated_pattern = self._rotate_to_min(binary_pattern)
+                    lbp_value = np.sum(rotated_pattern * (1 << np.arange(self.P)))
                 else:
-                    lbp_image[i, j] = self.P + 1
+                    lbp_value = self.P + 1
+                lbp_image[i - self.R, j - self.R] = lbp_value
         return lbp_image
 
     def compute_histogram(self, lbp_image):

@@ -1,6 +1,6 @@
 import numpy as np
 
-class VAR:
+class Var:
     def __init__(self, P=8):
         self.P = P
 

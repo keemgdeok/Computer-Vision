@@ -1,72 +1,63 @@
-import tkinter as tk
-from tkinter import filedialog
-from PIL import Image, ImageTk
+import os
+import cv2
+from PIL import Image
 import numpy as np
-from LBP_riu2 import LBP_riu2
-from VAR import VAR
-from feature_extraction import extract_combined_features, find_most_similar_cosine
 
 
-# Function to open an image and extract features
-def open_image():
-    global query_features, img_path
-    
-    img_path = filedialog.askopenfilename()
-    if img_path:
-        query_features = extract_combined_features(img_path, lbp_extractor, var_extractor)
-        load_query_image(img_path)
+def load_dataset(root_dir, target_size=(256, 256)):
+    images = []
+    labels = []
+    label_names = []
 
-# Function to load and display the query image
-def load_query_image(path):
-    img = Image.open(path)
-    img.thumbnail((200, 200))  # Resize for thumbnail
-    img = ImageTk.PhotoImage(img)
-    query_panel.config(image=img)
-    query_panel.image = img  # Keep a reference so it's not garbage collected
+    print("Root Directory:", root_dir)
+    print("Subdirectories and files:")
 
-# Function to find and display similar images
-def find_similar():
-    if query_features is not None:
-        top_k_indices = find_most_similar_cosine(query_features, dataset_features, top_k=5)
-        display_similar_images(top_k_indices)
+    for subdir, dirs, files in os.walk(root_dir):
+        print("Currently scanning:", subdir)  # Print the current directory being scanned
 
-# Function to display similar images
-def display_similar_images(indices):
-    for index, panel in zip(indices, result_panels):
-        img_path = image_paths[index]
-        img = Image.open(img_path)
-        img.thumbnail((100, 100))
-        img = ImageTk.PhotoImage(img)
-        panel.config(image=img)
-        panel.image = img
+        for file in files:
+            if file.lower().endswith(".png"):  # Ensuring case insensitivity
+                file_path = os.path.join(subdir, file)
+                try:
+                    # Open the image and convert to RGB
+                    image = Image.open(file_path).convert('RGB')
+                    if target_size:
+                        # Resize using PIL's LANCZOS (high-quality downsampling)
+                        image = image.resize(target_size, Image.LANCZOS)
+                    # Convert image to numpy array
+                    image_array = np.array(image)
+                    # Apply preprocessing
+                    processed_image = preprocess_image(image_array)
+                    images.append(processed_image)
+                    labels.append(os.path.basename(subdir))
+                except Exception as e:
+                    print(f"Error loading {file_path}: {e}")
 
-# Initialize the feature extractors
-lbp_extractor = LBP_riu2(P=8, R=1)
-var_extractor = VAR(P=8)
+        if subdir == root_dir:
+            label_names.extend(dirs)
 
-# Dummy dataset features and paths (replace with your actual data)
-dataset_features = np.load('dataset_features.npy')
-image_paths = ['image1.jpg', 'image2.jpg', ...]  # replace with actual paths
+    images = np.array(images, dtype=np.uint8)  # Ensure images are stored as uint8
+    labels = np.array(labels)
 
-# Create main window
-root = tk.Tk()
-root.title("Image Similarity GUI")
+    return images, labels, label_names
 
-# Load query image button
-load_button = tk.Button(root, text="Load Query Image", command=open_image)
-load_button.pack()
+def preprocess_image(image):
+    """Apply grayscale, histogram equalization, and Gaussian blur."""
+    # Convert to grayscale
+    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    # Apply histogram equalization
+    equalized_image = cv2.equalizeHist(gray_image)
+    # Apply Gaussian filtering
+    filtered_image = cv2.GaussianBlur(equalized_image, (5, 5), 0)
+    return filtered_image
 
-# Panel to display the query image
-query_panel = tk.Label(root)
-query_panel.pack()
 
-# Find similar images button
-find_button = tk.Button(root, text="Find Similar Images", command=find_similar)
-find_button.pack()
 
-# Panels to display the result images
-result_panels = [tk.Label(root) for _ in range(5)]
-for panel in result_panels:
-    panel.pack(side=tk.LEFT)
+if __name__ == "__main__":
+    # Usage
+    root_dir = 'C:/Users/gdeok/Computer-Vision/early-vision/Large'  # Make sure this is the correct path
+    images, labels, label_names = load_dataset(root_dir, target_size=(256, 256))
 
-root.mainloop()
+    print("Loaded", len(images), "images.")
+    print("Label names:", label_names)
+    print("First 10 labels:", labels[:10])
