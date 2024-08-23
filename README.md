@@ -1,6 +1,6 @@
 # Computer-Vision Classifiaction project
-### 1. Early-Vision
+### 1. Early-Vision based ML 
 
 
 
-### 2. based CNN architecture
+### 2. Deep-Learning based CNN architecture
