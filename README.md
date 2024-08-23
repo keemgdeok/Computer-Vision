@@ -6,3 +6,7 @@ Ojala T, Pietik, Inen M, et al. Multiresolution Gray-Scale and Rotation Invarian
 
 
 ### 2. Deep-Learning based CNN architecture
+reference  
+A ConvNet for the 2020s   
+: CVPR 2022.  
+[https://github.com/facebookresearch/ConvNeXt](https://github.com/facebookresearch/ConvNeXt)
